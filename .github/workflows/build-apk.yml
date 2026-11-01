@@ -1,0 +1,57 @@
+name: Build APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, master]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Unzip and prepare web files
+        run: |
+          mkdir -p tmp www
+          unzip -q -o ./*.zip -d tmp
+          # zip-er bhitore folder thakle ba na thakle duto-i kaj korbe
+          SRC=$(dirname "$(find tmp -name index.html -not -path '*/__MACOSX/*' | head -1)")
+          cp -r "$SRC"/. www/
+          ls -la www
+
+      - name: Create Capacitor project
+        run: |
+          npm init -y
+          npm install @capacitor/core @capacitor/cli @capacitor/android
+          npx cap init "Expense Tracker" com.hishab.expensetracker --web-dir=www
+          npx cap add android
+          npx cap sync android
+
+      - name: Set app icon
+        run: |
+          for d in mdpi hdpi xhdpi xxhdpi xxxhdpi; do
+            cp www/icon-192.png android/app/src/main/res/mipmap-$d/ic_launcher.png
+            cp www/icon-192.png android/app/src/main/res/mipmap-$d/ic_launcher_round.png
+            cp www/icon-192.png android/app/src/main/res/mipmap-$d/ic_launcher_foreground.png
+          done
+
+      - name: Build debug APK
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Expense-Tracker-APK
+          path: android/app/build/outputs/apk/debug/app-debug.apk
