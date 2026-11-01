@@ -45,8 +45,21 @@ jobs:
           }
           EOF
 
-      - name: Set app icon
-        run: find android/app/src/main/res -name 'ic_launcher*.png' -exec cp www/icon-192.png {} \;
+      - name: Set taka app icon
+        run: |
+          RES=android/app/src/main/res
+          find $RES -name 'ic_launcher.png' -exec cp www/icon-192.png {} \;
+          find $RES -name 'ic_launcher_round.png' -exec cp www/icon-192.png {} \;
+          find $RES -name 'ic_launcher_foreground.png' -exec cp www/icon-foreground.png {} \;
+          sed -i 's/#FFFFFF/#0E8A63/I' $RES/values/ic_launcher_background.xml
+
+      - name: Fixed key and version
+        run: |
+          if [ -f debug.keystore ]; then
+            mkdir -p ~/.android
+            cp debug.keystore ~/.android/debug.keystore
+          fi
+          sed -i "s/versionCode 1/versionCode ${{ github.run_number }}/" android/app/build.gradle
 
       - name: Build debug APK
         working-directory: android
