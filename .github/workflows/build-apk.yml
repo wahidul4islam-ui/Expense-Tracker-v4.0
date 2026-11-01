@@ -24,7 +24,6 @@ jobs:
         run: |
           mkdir -p tmp www
           unzip -q -o ./*.zip -d tmp
-          # zip-er bhitore folder thakle ba na thakle duto-i kaj korbe
           SRC=$(dirname "$(find tmp -name index.html -not -path '*/__MACOSX/*' | head -1)")
           cp -r "$SRC"/. www/
           ls -la www
@@ -37,21 +36,16 @@ jobs:
           npx cap add android
           npx cap sync android
 
+      - name: Fix Kotlin duplicate class
+        run: |
+          cat >> android/app/build.gradle << 'EOF'
+
+          dependencies {
+              implementation platform('org.jetbrains.kotlin:kotlin-bom:1.8.22')
+          }
+          EOF
+
       - name: Set app icon
         run: |
           for d in mdpi hdpi xhdpi xxhdpi xxxhdpi; do
-            cp www/icon-192.png android/app/src/main/res/mipmap-$d/ic_launcher.png
-            cp www/icon-192.png android/app/src/main/res/mipmap-$d/ic_launcher_round.png
-            cp www/icon-192.png android/app/src/main/res/mipmap-$d/ic_launcher_foreground.png
-          done
-
-      - name: Build debug APK
-        working-directory: android
-        run: |
-          chmod +x gradlew
-          ./gradlew assembleDebug
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: Expense-Tracker-APK
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+            cp www/icon-192.png android/app/src/main/res/mipmap
